@@ -1,25 +1,22 @@
-# OpenProject installation with Docker Compose
+# OpenProject installation with Coolify
 
-This repository contains the installation method for OpenProject using Docker Compose.
+This repository contains the installation method for OpenProject using Coolify.
 
 
-> [!NOTE]
-> Looking for the Kubernetes installation method?
-> Please use the [OpenProject helm chart](https://charts.openproject.org) to install OpenProject on kubernetes.
+## Quick start (LOCALHOST)
 
-## Quick start
-
-First, you must clone the [openproject-docker-compose](https://github.com/opf/openproject-docker-compose) repository:
+First, you must clone the [openproject-docker-compose](https://github.com/christian-quisbert/openproject-for-coolify.git) repository:
 
 ```shell
-git clone https://github.com/opf/openproject-docker-compose.git --depth=1 --branch=stable/17 openproject
+git clone https://github.com/christian-quisbert/openproject-for-coolify.git
 ```
-
+Copy the example `docker-compose.override.yml` file.\
 Copy the example `.env` file and edit any values you want to change:
 
 ```shell
+cp docker-compose.override.yml.example docker-compose.override.yml
 cp .env.example .env
-vim .env
+nano .env
 ```
 
 If you are using the default value of OPDATA that is used in the ```.env.example``` you need to make sure that the folder exist, and you have the right permissions:
@@ -32,11 +29,11 @@ sudo chown 1000:1000 -R /var/openproject/assets
 Next you start up the containers in the background while making sure to pull the latest versions of all used images.
 
 ```shell
-SECRET_KEY_BASE=<your-secret-key-base> OPENPROJECT_HTTPS=false docker compose up -d --build --pull always
+docker compose up -d --build --pull always
 ```
 After a while, OpenProject should be up and running on `http://localhost:8080`. The default username and password is login: `admin`, and password: `admin`.
 The `OPENPROJECT_HTTPS=false` environment variable explicitly disables HTTPS mode for the first startup. Without this, OpenProject assumes it's running behind HTTPS in production by default.
-We do strongly recommend you use OpenProject behind a TLS terminated proxy for production purposes and remove this flag before actually starting to use it.
+
 
 You will also need to provide a secure key for the `SECRET_KEY_BASE`, it should be unique and treated like a password.
 This value is used to derive keys for the Rails application. Changing this value will invalidate all cookies, including sessions and 2FA remembering tokens.
@@ -49,15 +46,6 @@ For instance you could mount specific configuration files, override environment 
 
 Please refer to the official [Docker Compose documentation](https://docs.docker.com/compose/extends/) for more details.
 
-### Troubleshooting
-
-**pull access denied for openproject/proxy, repository does not exist or may require 'docker login': denied: requested access to the resource is denied**
-
-If you encounter this after `docker compose up` this is merely a warning which can be ignored.
-
-If this happens during `docker compose pull` this is simply a warning as well.
-But it will result in the command's exit code to be a failure even though all images are pulled.
-To prevent this you can add the `--ignore-buildable` option, running `docker compose pull  --ignore-buildable`.
 
 ### Collaboration server
 
@@ -65,26 +53,12 @@ The collaboration server is enabled by default when setting up this application.
 
 > Important! Make sure to override the default secret by adjusting the docker-compose file or setting the `COLLABORATIVE_SERVER_SECRET` variable.
 
-When running it in *localhost* it's necessary to make a few adjustments:
-
-1. Either define a local alias (adding an entry to your hosts file) or setup HTTPS/SSL
-2. Define the `OPENPROJECT_HOST__NAME`, and the `COLLABORATIVE_SERVER_URL` in your .env file (you can look at .env.example for reference)
-3. Restart the containers
 
 ### HTTPS/SSL
 
-By default OpenProject starts with the HTTPS option **enabled**, but it **does not** handle SSL termination itself. This
-is usually done separately via a [reverse proxy
-setup](https://www.openproject.org/docs/installation-and-operations/installation/docker/#apache-reverse-proxy-setup).
-Without this you will run into an `ERR_SSL_PROTOCOL_ERROR` when accessing OpenProject.
+On **LOCALHOST**, by default OpenProject starts with the HTTP option **disabled**.
 
-See below how to disable HTTPS.
 
-Be aware that if you want to use the integrated Caddy proxy as a proxy with outbound connections, you need to rewrite the
-`Caddyfile`. In the default state, it is configured to forward the `X-Forwarded-*` headers from the reverse proxy in
-front of it and not setting them itself. This is considered a security flaw and should instead be solved by configuring
-`trusted_proxies` inside the `Caddyfile`. For more information read
-the [Caddy documentation](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
 
 ### PORT
 
@@ -96,7 +70,7 @@ See below how to change that.
 OpenProject publishes `slim` containers that you should be using for this compose setup.
 Please see https://www.openproject.org/docs/installation-and-operations/installation/docker/#available-containers for more information on the containers and versions we push.
 
-## Configuration
+## Environment variables Configuration
 
 Environment variables can be added to `docker-compose.yml` under `x-op-app -> environment` to change
 OpenProject's configuration. Some are already defined and can be changed via the environment.
@@ -111,20 +85,13 @@ You can also put those variables into an `.env` file in your current working
 directory, and Docker Compose will pick it up automatically. See `.env.example`
 for details.
 
-## HTTPS
 
-You can disable OpenProject's HTTPS option via:
-
-```
-OPENPROJECT_HTTPS=false
-```
-
-## PORT
+## APP_PORT
 
 If you want to specify a different port, you can do so with:
 
 ```
-PORT=4000
+APP_PORT=8080
 ```
 
 If you don't want OpenProject to bind to `0.0.0.0` you can bind it to localhost only like this:

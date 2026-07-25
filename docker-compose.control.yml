@@ -42,9 +42,6 @@ services:
   seeder:
     restart: "no"
     entrypoint: ["echo", "disabled"]
-  proxy:
-    restart: "no"
-    entrypoint: ["echo", "disabled"]
   cache:
     restart: "no"
     entrypoint: ["echo", "disabled"]
