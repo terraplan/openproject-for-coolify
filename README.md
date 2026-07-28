@@ -2,6 +2,60 @@
 
 This repository contains the installation method for OpenProject using Coolify.
 
+## Quick start (DEPLOY ON COOLIFY)
+
+1. In Coolify: **Project → Resources → [+ New] -> Public Repository**
+
+![New Resource](assets/image_1.png)
+
+2. Paste the repository URL: `https://github.com/christian-quisbert/openproject-for-coolify/tree/stable/17`
+3. Configure:
+   - **Build Pack:** Docker Compose
+   - **Base Directory:** `/`
+   - **Docker Compose Location:** `/docker-compose.yml`
+
+![Build Pack Settings](assets/image_2.png)
+
+4. Click **Continue**
+
+5. Set your custom domain
+
+![Domain Settings](assets/image_3.png)
+
+6. **Before deploying**, configure the following environment variables:
+
+| Variable | Value |
+|----------|-------|
+| `OPENPROJECT_HOST__NAME` | `XXXXXXXXXXX.yourdomain.com` |
+| `COLLABORATIVE_SERVER_SECRET` | (generate a key) |
+| `POSTGRES_PASSWORD` | (generate a key) |
+| `SECRET_KEY_BASE` | (generate a key) |
+
+> To generate keys run: `openssl rand -base64 32 | tr -d '+/=' | cut -c1-32`
+
+![Environment Variables](assets/image_4.png)
+
+7. Save all env variables and click **Deploy**
+
+After deployment, the `seeder` service will show as **exited** — this is normal. It only runs the initial database migrations. Try visiting your domain.
+
+---
+### Troubleshooting
+
+**Image pull error on first deploy**
+
+- If the deploy fails because it can't download images from Docker Hub, pre-cache them manually from your server terminal:
+
+```bash
+docker pull openproject/openproject:17-slim
+docker pull postgres:17
+docker pull memcached
+docker pull openproject/hocuspocus:17.6.0
+```
+- Then redeploy from Coolify.
+
+
+
 
 ## Quick start (LOCALHOST)
 
@@ -35,9 +89,15 @@ After a while, OpenProject should be up and running on `http://localhost:8080`. 
 The `OPENPROJECT_HTTPS=false` environment variable explicitly disables HTTPS mode for the first startup. Without this, OpenProject assumes it's running behind HTTPS in production by default.
 
 
-You will also need to provide a secure key for the `SECRET_KEY_BASE`, it should be unique and treated like a password.
-This value is used to derive keys for the Rails application. Changing this value will invalidate all cookies, including sessions and 2FA remembering tokens.
+**Para detener los contenedores desplegados localmente:**
+```bash
+docker compose down
+```
+> [!NOTE]
+> - This will not remove your data which is persisted in named volumes, likely called `assets` (for attachments) and `postgres` (for the database).\
+> - If you want to start from scratch and remove the existing data you will have to remove these volumes via `rm -dr data/postgres`.
 
+---
 ### Customization
 
 The `docker-compose.yml` file present in the repository can be adjusted to your convenience. But note that with each pull, it will be overwritten.
@@ -58,12 +118,6 @@ The collaboration server is enabled by default when setting up this application.
 
 On **LOCALHOST**, by default OpenProject starts with the HTTP option **disabled**.
 
-
-
-### PORT
-
-By default the port is bound to `0.0.0.0` means access to OpenProject will be public.
-See below how to change that.
 
 ## Image configuration
 
@@ -100,35 +154,32 @@ If you don't want OpenProject to bind to `0.0.0.0` you can bind it to localhost 
 PORT=127.0.0.1:8080
 ```
 
-## TAG
 
+## Others:
+
+### TAG
 If you want to specify a custom tag for the OpenProject docker image, you can do so with:
 
 ```
 TAG=my-docker-tag
 ```
 
-## BIM edition
-
-In order to install or change to BIM inside a Docker environment, please navigate to the [Docker Installation for OpenProject BIM](https://www.openproject.org/docs/installation-and-operations/bim-edition/#docker-installation-openproject-bim) paragraph at the BIM edition documentation.
-
-## Upgrade
-
+### Upgrade
 Retrieve any changes from the `openproject-docker-compose` repository:
 
     git pull origin stable/17
 
 Build the control plane:
 
-    docker-compose -f docker-compose.yml -f docker-compose.control.yml build
+    docker compose -f docker-compose.yml -f docker-compose.control.yml build
 
 Take a backup of your existing postgresql data and openproject assets:
 
-    docker-compose -f docker-compose.yml -f docker-compose.control.yml run backup
+    docker compose -f docker-compose.yml -f docker-compose.control.yml run backup
 
 Run the upgrade:
 
-    docker-compose -f docker-compose.yml -f docker-compose.control.yml run upgrade
+    docker compose -f docker-compose.yml -f docker-compose.control.yml run upgrade
 
 Relaunch the containers, ensure you are pulling to use the latest version of the Docker images:
 
@@ -136,69 +187,21 @@ Relaunch the containers, ensure you are pulling to use the latest version of the
 
 
 
-## Backup
+### Backup
 
 Switch off your current installation:
 
-    docker-compose down
+    docker compose down
 
 Build the control scripts:
 
-    docker-compose -f docker-compose.yml -f docker-compose.control.yml build
+    docker compose -f docker-compose.yml -f docker-compose.control.yml build
 
 Take a backup of your existing PostgreSQL data and OpenProject assets:
 
-    docker-compose -f docker-compose.yml -f docker-compose.control.yml run backup
+    docker compose -f docker-compose.yml -f docker-compose.control.yml run backup
 
 Restart your OpenProject installation
 
-    docker-compose up -d
+    docker compose up -d
 
-
-
-## Uninstall
-
-If you want to stop the containers without removing them directly:
-
-```bash
-docker-compose stop
-```
-
-You can remove the container stack with:
-
-```bash
-docker-compose down
-```
-
-> [!NOTE]
-> This will not remove your data which is persisted in named volumes, likely called `compose_opdata` (for attachments) and `compose_pgdata` (for the database).
-> The exact name depends on the name of the directory where your `docker-compose.yml` and/or you `docker-compose.override.yml` files are stored (`compose` in this case).
-
-If you want to start from scratch and remove the existing data you will have to remove these volumes via
-`docker volume rm compose_opdata compose_pgdata`.
-
-## Troubleshooting
-
-You can look at the logs with:
-
-    docker-compose logs -n 1000
-
-For the complete documentation, please refer to https://docs.openproject.org/installation-and-operations/.
-
-### Network issues
-
-If you're running into weird network issues and timeouts such as the one described in
-[OP#42802](https://community.openproject.org/work_packages/42802), you might have success in remove the two separate
-frontend and backend networks. This might be connected to using podman for orchestration, although we haven't been able
-to confirm this.
-
-### SMTP setup fails: Network is unreachable.
-
-Make sure your container has DNS resolution to access external SMTP server when set up as described in
-[OP#44515](https://community.openproject.org/work_packages/44515).
-
-```yml
-worker:
-  dns:
-    - "Your DNS IP" # OR add a public DNS resolver like 8.8.8.8
-```
