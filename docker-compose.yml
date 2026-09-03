@@ -42,6 +42,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+    ports:
+      "127.0.0.1:5437:5432"
 
   cache:
     image: memcached
