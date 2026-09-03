@@ -1,8 +1,6 @@
 # This file is for local development only. Docker Compose loads it automatically.
 # In Coolify/production it does not exist, so the port is not exposed on the host.
 services:
-  web:
-    environment:
-      PORT: "${APP_PORT:-8080}"
+  db:
     ports:
-      - "${HOST_PORT:-8080}:${APP_PORT:-8080}"
+      - '127.0.0.1:5485:5432'
